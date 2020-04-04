@@ -8,8 +8,8 @@ BencodeDecodeString[code_] := Module[{length, len, rest},
     endl = ToCharacterCode[":"][[1]];
     length = TakeWhile[code, # != endl &];
     rest = Drop[code, Length@length+1];
-    len = ToExpression@ExportString[length, "UnsignedInteger8"];
-    {Take[rest, len], Drop[rest, len]}
+    len = ToExpression@ExportString[length, "Byte"];
+    {FromCharacterCode[Take[rest, len], "ASCII"], Drop[rest, len]}
 ];
 
 
@@ -32,7 +32,7 @@ BencodeDecodeDict[code_] := Module[{result, key, elem, char, data},
     While [char != First@ToCharacterCode@"e",
         {key, data} = BencodeDecodeString[data];
         {elem, data} = BencodeDecode[data];
-        key = ExportString[key, "UnsignedInteger8"];
+        (*key = ExportString[key, "Byte"];*)
         result = Append[result, key -> elem ];
         char = First@data;
     ];
@@ -49,4 +49,4 @@ BencodeDecode[code_] := Module[{char},
     ]
 ];
 
-BencodeLoad[path_] := First@BencodeDecode@Import[path, "UnsignedInteger8"]
+BencodeLoad[path_] := First@BencodeDecode@Import[path, "Byte"]
