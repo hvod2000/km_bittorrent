@@ -7,7 +7,7 @@ BencodeEncode[string_String] :=
 BencodeEncode[list_List] :=
     "l" <> StringJoin@@BencodeEncode/@list <> "e";
 
-BencodeEncode[dict_Association] := Module[{encoded},
+BencodeEncode[dict_Association] := Block[{encoded},
     encoded = Map[BencodeEncode, KeyMap[BencodeEncode, KeySort@dict]];
     "d" <> StringJoin@KeyValueMap[ #1 <> #2 &, encoded] <> "e"
 ];
