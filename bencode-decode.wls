@@ -4,33 +4,35 @@ BencodeDecodeInteger[code_] := Block[{result, endl},
     {ToExpression@FromCharacterCode@result, Drop[code, Length@result+1]}
 ];
 
-BencodeDecodeString[code_] := Block[{length, len, rest},
+BencodeDecodeString[code_, encoding_String] := Block[{length, len, rest, str},
     endl = ToCharacterCode[":"][[1]];
     length = TakeWhile[code, # != endl &];
     rest = Drop[code, Length@length+1];
     len = ToExpression@ExportString[length, "Byte"];
-    {FromCharacterCode[Take[rest, len], "koi8-r"], Drop[rest, len]}
+    str = Take[rest, len];
+    str = Quiet@Check[FromCharacterCode[str, encoding], ByteArray@str];
+    {str, Drop[rest, len]}
 ];
 
-BencodeDecodeList[code_] := Block[{result, elem, char, data},
+BencodeDecodeList[code_, encoding_String] := Block[{result, elem, char, data},
     result = {};
     data = code;
     char = First@data;
     While [char != First@ToCharacterCode@"e",
-        {elem, data} = BencodeDecode[data];
+        {elem, data} = BencodeDecode[data, encoding];
         char = First@data;
         result = Append[result, elem];
     ];
     {result, Rest@data}
 ];
 
-BencodeDecodeDict[code_] := Block[{result, key, elem, char, data},
+BencodeDecodeDict[code_, encoding_String] := Block[{result, key, elem, char, data},
     result = <| |>;
     data = code;
     char = First@data;
     While [char != First@ToCharacterCode@"e",
-        {key, data} = BencodeDecodeString[data];
-        {elem, data} = BencodeDecode[data];
+        {key, data} = BencodeDecodeString[data, encoding];
+        {elem, data} = BencodeDecode[data, encoding];
         (*key = ExportString[key, "Byte"];*)
         result = Append[result, key -> elem ];
         char = First@data;
@@ -38,17 +40,28 @@ BencodeDecodeDict[code_] := Block[{result, key, elem, char, data},
     {result, Rest@data}
 ];
 
-BencodeDecode[code_List] := Block[{char},
+BencodeDecode[code_List, encoding_String] := Block[{char},
     char = First@code;
     Switch [char,
         First@ToCharacterCode@"i", BencodeDecodeInteger@Rest@code,
-        First@ToCharacterCode@"l", BencodeDecodeList@Rest@code,
-        First@ToCharacterCode@"d", BencodeDecodeDict@Rest@code,
-        _, BencodeDecodeString@code
+        First@ToCharacterCode@"l", BencodeDecodeList[Rest@code, encoding],
+        First@ToCharacterCode@"d", BencodeDecodeDict[Rest@code, encoding],
+        _, BencodeDecodeString[code, encoding]
     ]
 ];
 
-BencodeDecode[code_String] :=
-    First@BencodeDecode[ToCharacterCode[code, "koi8-r"]]
+BencodeDecode[code_String, encoding_String] :=
+    First@BencodeDecode[ToCharacterCode[code, encoding], encoding]
 
-BencodeLoad[path_] := First@BencodeDecode@Import[path, "Byte"]
+BencodeDecode[code_ByteArray, encoding_String] :=
+    First@BencodeDecode[Normal@code, encoding]
+
+BencodeDecode[code_] :=
+    BencodeDecode[code, "UTF8"]
+
+BencodeLoad[path_, encoding_String] := First@BencodeDecode[
+    Import[path, "Byte"],
+    encoding
+]
+
+BencodeLoad[path_] := BencodeLoad[path, "UTF-8"]
