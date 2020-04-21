@@ -1,25 +1,30 @@
-#!/usr/bin/env wolframscript
+    #!/usr/bin/env wolframscript
 Import["bencode-encode.wls"]
 Import["bencode-decode.wls"]
 
 CreatePeerId[] :=
-    "-KM001-" <> StringJoin@Array[ToString@RandomInteger[9] &, 12]
+    "-KM001-" <> StringJoin@Array[ToString@RandomInteger[9] &, 13]
 
-TorrentTraker[path_String, infoHash_ByteArray, size_Integer, port_Integer] :=
-    TorrentTraker[path, {
+TorrentTracker[path_String, infoHash_ByteArray, size_Integer, port_Integer] :=
+    TorrentTracker[CreatePeerId[], path, infoHash, size, port]
+
+TorrentTracker[peerId_String, path_String,
+               infoHash_ByteArray, size_Integer, port_Integer] :=
+    TorrentTracker[path, {
         "info_hash" -> ByteArrayToString[infoHash, "koi8-r"],
-        "peer_id" -> CreatePeerId[],
+        "peer_id" -> peerId,
         "uploaded" -> "0",
-        "downloaded" -> "156",
+        "downloaded" -> ToString@size,
         "left" -> ToString[size],
         "port" -> ToString[port],
         "compact" -> "1"
     }]
 
-GetPeers[TorrentTraker[path_String, params_List]] ^:=
-    ParsePeers[BencodeDecode[KmHTTPRequest[URLBuild[
-        path, params, CharacterEncoding -> "koi8-r"
-    ]]][["peers"]]]
+GetPeers[TorrentTracker[path_String, params_List]] ^:=
+Block[{url},
+    url = URLBuild[path, params, CharacterEncoding -> "koi8-r"];
+    BencodeDecode[KmHTTPRequest[url]][["peers"]] // ParsePeers
+]
 
 KmHTTPRequest[url_String] := 
 Block[{socket, urll, domain, path, msg, pos},
@@ -36,12 +41,10 @@ Block[{socket, urll, domain, path, msg, pos},
         "Accept: text/html\r\n" <>
         "Connection: close\r\n\r\n"
     ];
-    msg = ByteArrayToString[SocketReadMessage[socket], "koi8-r"];
-    pos = Last@Flatten@StringPosition[msg, Repeated[("\r\n" | "\n"), {2}], 1];
-    StringDrop[msg, pos]
+    msg = Normal@SocketReadMessage[socket];
+    msg /. {___,13, 10, 13, 10,a__}:>{a}
 ]
 
-ParsePeers[peers_String] := {
-    StringRiffle[ToString /@ #[[1 ;; 4]], "."],
-    #[[5 ;; 6]].{256, 1}
-} & /@ Partition[ToCharacterCode[peers, "koi8-r"], 6]
+ParsePeers[peers_ByteArray] := {
+    StringRiffle[ToString /@ Drop[#, -2], "."], Drop[#, 4].{256, 1}
+} & /@ Partition[Normal@peers, 6]
