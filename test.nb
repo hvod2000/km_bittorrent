@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     11251,        288]
-NotebookOptionsPosition[      9204,        249]
-NotebookOutlinePosition[      9546,        264]
-CellTagsIndexPosition[      9503,        261]
+NotebookDataLength[     13931,        358]
+NotebookOptionsPosition[     11380,        312]
+NotebookOutlinePosition[     11721,        327]
+CellTagsIndexPosition[     11678,        324]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -245,10 +245,73 @@ Cell[BoxData[{
   3.7970565158687525`*^9, 3.797056516100133*^9}},
  CellLabel->
   "In[135]:=",ExpressionUUID->"5b370448-c622-410f-abc1-db79a181da18"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Peer", "Section",
+ CellChangeTimes->{{3.7970587740997*^9, 
+  3.7970587755228443`*^9}},ExpressionUUID->"f15d8d46-d429-4696-8ee2-\
+29968cc59037"],
+
+Cell[BoxData[
+ RowBox[{"Import", "[", "\"\<peer.wls\>\"", "]"}]], "Input",
+ CellChangeTimes->{{3.7970587791257486`*^9, 3.79705878955445*^9}},
+ CellLabel->
+  "In[147]:=",ExpressionUUID->"65d7d35e-14eb-4294-9c92-fcae2e569ca7"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"peerId", "=", 
+   RowBox[{"CreatePeerId", "[", "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"dotTorrent", "=", 
+   RowBox[{"BencodeLoad", "[", "\"\<test.torrent\>\"", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"infoHash", "=", 
+   RowBox[{"Hash", "[", 
+    RowBox[{
+     RowBox[{"ByteArray", "@", 
+      RowBox[{"BencodeEncode", "[", 
+       RowBox[{"dotTorrent", "[", "\"\<info\>\"", "]"}], "]"}]}], ",", 
+     "\"\<SHA\>\"", ",", "\"\<ByteArray\>\""}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"piecesCount", "=", 
+   RowBox[{
+    RowBox[{
+     RowBox[{
+      RowBox[{"dotTorrent", "[", 
+       RowBox[{"\"\<info\>\"", ",", "\"\<length\>\""}], "]"}], "/", 
+      RowBox[{"dotTorrent", "[", 
+       RowBox[{"\"\<info\>\"", ",", "\"\<piece length\>\""}], "]"}]}], "//", 
+     "N"}], " ", "//", " ", "Floor"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.797058874020008*^9, 3.7970589269073353`*^9}, 
+   3.7970589771533155`*^9, {3.7970590183657045`*^9, 3.7970590239768577`*^9}},
+ CellLabel->
+  "In[148]:=",ExpressionUUID->"654a03b7-e8bf-48c8-8d2a-dd7cfa53026c"],
+
+Cell[BoxData[
+ RowBox[{"peer", "=", 
+  RowBox[{"PeerConnect", "[", 
+   RowBox[{"{", 
+    RowBox[{"\"\<127.0.0.1\>\"", ",", "19257"}], "}"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.7970589579848537`*^9, 3.797058974929784*^9}, {
+  3.7970590414346237`*^9, 3.7970590771104136`*^9}},
+ CellLabel->
+  "In[152]:=",ExpressionUUID->"55db0684-4e11-41ed-85c4-81218ff9f89e"],
+
+Cell[BoxData[
+ RowBox[{"peer", "=", 
+  RowBox[{"Process", "[", "peer", "]"}]}]], "Input",
+ CellChangeTimes->{{3.797059080483395*^9, 3.7970591212392883`*^9}},
+ CellLabel->
+  "In[156]:=",ExpressionUUID->"a3c1bdd6-d092-4395-b00a-b5498ab58623"]
 }, Open  ]]
 },
-WindowSize->{1520, 781},
-WindowMargins->{{-8, Automatic}, {Automatic, 0}},
+WindowSize->{766, 772},
+WindowMargins->{{-7, Automatic}, {Automatic, 0}},
 FrontEndVersion->"12.0 for Microsoft Windows (64-bit) (April 8, 2019)",
 StyleDefinitions->"Default.nb"
 ]
@@ -289,6 +352,13 @@ Cell[6475, 183, 284, 5, 45, "Input",ExpressionUUID->"640c2e06-24a0-4622-858f-862
 Cell[6762, 190, 977, 20, 141, "Input",ExpressionUUID->"9cf88b57-294e-44d4-a3ee-fea7bb9e3eb3"],
 Cell[7742, 212, 801, 18, 142, "Input",ExpressionUUID->"ac737b78-4382-4e3c-a02e-5e633988acff"],
 Cell[8546, 232, 642, 14, 64, "Input",ExpressionUUID->"5b370448-c622-410f-abc1-db79a181da18"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[9225, 251, 149, 3, 67, "Section",ExpressionUUID->"f15d8d46-d429-4696-8ee2-29968cc59037"],
+Cell[9377, 256, 224, 4, 45, "Input",ExpressionUUID->"65d7d35e-14eb-4294-9c92-fcae2e569ca7"],
+Cell[9604, 262, 1151, 30, 120, "Input",ExpressionUUID->"654a03b7-e8bf-48c8-8d2a-dd7cfa53026c"],
+Cell[10758, 294, 363, 8, 28, "Input",ExpressionUUID->"55db0684-4e11-41ed-85c4-81218ff9f89e"],
+Cell[11124, 304, 240, 5, 28, "Input",ExpressionUUID->"a3c1bdd6-d092-4395-b00a-b5498ab58623"]
 }, Open  ]]
 }
 ]
