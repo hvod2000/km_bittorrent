@@ -3,9 +3,9 @@
 ClearAll[BufferedSocket, BufferedSocketConnect]
 SetAttributes[BufferedSocket, HoldAll]
 
-BufferedSocketConnect[adress_]:=
+BufferedSocketConnect[adress__]:=
 Module[{self=<|
-	"socket"->SocketConnect[adress, "TCP"],
+	"socket"->SocketConnect[adress],
 	"buffer"->{},
 	"bufferLen"->0,
 	"cursor"->1
@@ -28,8 +28,8 @@ BufferedSocket[self_]["FillBuffer"]:= (
 
 (b:BufferedSocket[self_])["ReadBytes", n_Integer]:=
 Block[{out},
-	If[n > self@"bufferLen" - self@"cursor", b@"FillBuffer"];
-	out = self[["buffer", self["cursor"];;self["cursor"]+n-1]];
+	If[self@"cursor" + n - 1 > self@"bufferLen", b@"FillBuffer"];
+	out = self[["buffer", self["cursor"];;self["cursor"] + n - 1]];
 	self@"cursor" += n;
 	out
 ]
