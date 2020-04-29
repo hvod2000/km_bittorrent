@@ -1,5 +1,8 @@
 #!/usr/bin/env wolframscript
 
+ClearAll[Peer]
+SetAttributes[Peer, HoldAll]
+
 Handshake[] := 
 {
 	19, ToCharacterCode["BitTorrent protocol"], 
@@ -8,54 +11,73 @@ Handshake[] :=
 	ToCharacterCode[peerId]
 } //Flatten
 
-ClearAll[Peer]
-
 PeerConnect[adress_] := 
-Block[{socket},
-	socket = BufferedSocketConnect[adress, "TCP"];
-	socket["SendBytes", Handshake[]];
-	Peer[Null, socket]
+Module[{self = <|
+	"socket" -> BufferedSocketConnect[adress, "TCP"],
+	"state" -> "handshaking",
+	"amChoking" -> 1,
+	"amInterested" -> 0,
+	"peerChoking" -> 1,
+	"peerInterested" -> 0,
+	"pieces" -> ConstantArray[0, piecesCount]
+|>},
+	self["socket"]["SendBytes", Handshake[]];
+	Peer[self]
 ]
 
-Process[p:Peer[Null, socket_BufferedSocket]] ^:=
-If[socket@"IsReady",
-	Block[{msg},
-		msg = socket["ReadBytes", 68];
-		If[ByteArray@msg[[29;;48]] === infoHash,
-			Peer[
-				{0, 1, 0, 1}, 
-				socket,
-				ConstantArray[0, piecesCount]
-			],
-			Null
-		]
-	],
-	p
-]
-
-Process[p:Peer[state_List, socket_BufferedSocket, pieces_List]] ^:= 
-Block[{
-	amChoking, amInterested, peerChoking, peerInterested,
-	newPieces = pieces,
-	msgLen, msgID
-	},
-	{amChoking, amInterested, peerChoking, peerInterested}= state;
-	While[socket["IsReady"],
-		msgLen = FromDigits[socket["ReadBytes", 4], 256];
-		If[msgLen === 0, Continue[]];(*keep-alive*)
-		msgID = socket["ReadBytes", 1] // First;
+Peer[self_]["ReadMessages"]:= 
+Block[{msgLen, msgID},
+	If[self@"state" === "handshaking" && self["socket"]["IsReady"],
+		If[self["socket"]["ReadBytes", 68][[29;;48]] === Normal@infoHash,
+			self@"state" = "alive",
+			self@"state" = "dead"]
+	];
+	While[self@"state" === "alive" && self["socket"]["IsReady"],
+		msgLen = FromDigits[self["socket"]["ReadBytes", 4], 256];
+		If[msgLen === 0, Continue[]];(*keep-alive message*)
+		msgID = self["socket"]["ReadBytes", 1] // First;
 		Switch[msgID,
-		0, peerChoking = 1,
-		1, peerChoking = 0,
-		2, peerInterested = 1,
-		3, peerInterested = 0,
-		4, newPieces[[FromDigits[socket["ReadBytes", 4], 256]]] = 1,
-		5, newPieces = 
-			IntegerDigits[#, 2]& /@ socket["ReadBytes", msgLen - 1] //Flatten,
-		7, AppendTo[pieces, socket["ReadBytes", msgLen - 1]]
+		0, self@"peerChoking" = 1,
+		1, self@"peerChoking" = 0,
+		2, self@"peerInterested" = 1,
+		3, self@"peerInterested" = 0,
+		4, self[["pieces", FromDigits[self["socket"]["ReadBytes", 4], 256]]] = 1,
+		5, self@"pieces" = 
+			IntegerDigits[#, 2]& /@ self["socket"]["ReadBytes", msgLen - 1] //Flatten,
+		6,,
+		7, AppendTo[tmpDownloaded, self["socket"]["ReadBytes", msgLen - 1]]
 		]
 	];
-	Peer[{amChoking, amInterested, peerChoking, peerInterested},
-		  socket,
-		  newPieces]
 ]
+
+Peer[self_]["Get", property_String]:= self[property]
+
+Peer[self_]["Send", "choke"]:= (
+	self["socket"]["SendBytes", {0,0,0,1,0}];
+	self@"amChoking" = 1;)
+	
+Peer[self_]["Send", "unchoke"]:= (
+	self["socket"]["SendBytes", {0,0,0,1,1}];
+	self@"amChoking" = 0;)
+	
+Peer[self_]["Send", "interested"]:= (
+	self["socket"]["SendBytes", {0,0,0,1,2}];
+	self@"amInterested" = 1;)
+	
+Peer[self_]["Send", "not interested"]:= (
+	self["socket"]["SendBytes", {0,0,0,1,3}];
+	self@"amInterested" = 0;)
+	
+Peer[self_]["Send", "have", index_Integer]:= 
+	(self["socket"]["SendBytes", 
+		{0,0,0,5,4, IntegerDigits[index, 256, 4]} // Flatten
+	];)
+
+Peer[self_]["Send", "request", index_Integer, begin_Integer, length_Integer]:= 
+	(self["socket"]["SendBytes", 
+		{0,0,0,13,6,
+		IntegerDigits[index, 256, 4],
+		IntegerDigits[begin, 256, 4],
+		IntegerDigits[length, 256, 4]
+		} // Flatten
+	];)
